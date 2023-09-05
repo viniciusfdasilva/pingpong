@@ -12,7 +12,7 @@
 #define FALSE              0
 #define HOST_IP            "127.0.0.1"   // IPV4 loopback address
 #define SERVER_PORT        8077         // Server port
-#define BUFFER_SIZE        8192        // Default size
+#define BUFFER_SIZE        8192        // Default size (64bytes) to (8Kbytes)
 #define PORT_USED_CODE     256
 #define SOCKET_ERROR_CODE  -1         // Socket create, Connection server, Receive buffer to server code error
 #define SYSTEM_EXIT_FAILED  1        // Operating System program error response 
