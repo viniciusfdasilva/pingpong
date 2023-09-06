@@ -11,8 +11,8 @@ clean:
 
 run_client:
 	@$(CC) client.c -o client
-	@./client $(buffer_size)&
+	@./client $(buffer_size)
 
 run_server:
 	@$(CC) server.c -o server
-	@./server $(buffer_size)&
+	@./server $(buffer_size)
