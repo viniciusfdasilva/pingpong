@@ -9,7 +9,7 @@
 #define FALSE              0
 #define TRUE               1
 #define HOST_IP            "127.0.0.1"    // IPV4 loopback address
-#define SERVER_PORT        8179          // Server port
+#define SERVER_PORT        8294          // Server port
 #define MAX_CONNECTIONS     2          // Num max client connected simultaneously 
 #define SOCKET_ERROR_CODE  -1         // Socket create, Connection server, Receive buffer to server code error
 #define SYSTEM_EXIT_FAILED  1        // Operating System program error response 
@@ -43,7 +43,7 @@ socket_address config_server_address()
     return server_address;
 }
 
-void bind_server(int server_socket, socket_address server_address)
+void bind_server(int server_socket, socket_address server_address, int buffer_size)
 {
 
     struct sockaddr *address = (struct sockaddr*)&server_address;
@@ -76,36 +76,33 @@ int accept_connection(int client_socket, int server_socket, socket_address clien
 
 }
 
-void send_buffer(int client_socket, char buffer[])
+void send_buffer(int client_socket, char buffer[], char buffer_size)
 {
     
-    printf("\n[SERVER] - Sending [PONG]\n\n");
-    send(client_socket, buffer, strlen(buffer), 0);
+    printf("\n[SERVER] - Sending [PONG]\n");
+    send(client_socket, buffer, buffer_size, 0);
 }
 
 
-void receive_buffer(int client_socket, char buffer[], int buffer_size)
+int receive_buffer(int client_socket, char buffer[], int buffer_size)
 {
     int bytes_read;
-    int lock = FALSE;
 
     char received_buffer[buffer_size];
 
     printf("[SERVER] - Receiving [PING]\n");
 
-    while((bytes_read = recv(client_socket, received_buffer, sizeof(received_buffer), 0)) > 0)
+    while((bytes_read = recv(client_socket, received_buffer, buffer_size, 0)) > 0)
     {
-        if(!lock){
 
-            lock = TRUE;
-            received_buffer[bytes_read] = '\0';
-            printf("[SERVER] - Client message received successfully!");
+        received_buffer[bytes_read] = '\0';
 
-            send_buffer(client_socket, received_buffer);
-        }
+        printf("VALUE RECEIVED [  %s  ]", received_buffer);
+
+        printf("\n[SERVER] - Client message received successfully!");
+
+        send_buffer(client_socket, received_buffer, buffer_size);
     }
-
-    
 }
 
 void controlc_handler()
@@ -131,14 +128,17 @@ void server_listen(int client_socket, int server_socket, socket_address client_a
     //{
     //    perror("Signal create error!");
     //    exit(SYSTEM_EXIT_FAILED);
-    //}
+    //} 
+
+    char received_buffer[buffer_size];
     
-    //while(TRUE)
-    //{
+
+    while(TRUE)
+    {
         client_socket = accept_connection(client_socket, server_socket, client_address, client_addr_len);
         
         receive_buffer(client_socket, buffer, buffer_size);
-    //}
+    }
     
 }
 
@@ -158,7 +158,7 @@ int main(int argc, char** argv)
 
     server_address = config_server_address();
 
-    bind_server(server_socket, server_address);
+    bind_server(server_socket, server_address, buffer_size);
     
     server_listen(client_socket, server_socket, client_address, client_addr_len, buffer, buffer_size);
 }

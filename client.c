@@ -10,7 +10,7 @@
 #define TRUE               1
 #define FALSE              0
 #define HOST_IP            "127.0.0.1"   // IPV4 loopback address
-#define SERVER_PORT        8179         // Server port
+#define SERVER_PORT        8294         // Server port
 #define PORT_USED_CODE     256
 #define SOCKET_ERROR_CODE  -1         // Socket create, Connection server, Receive buffer to server code error
 #define SYSTEM_EXIT_FAILED  1        // Operating System program error response 
@@ -82,37 +82,27 @@ int is_server_down()
     system(full_command) == PORT_USED_CODE ? FALSE : TRUE;
 }
 
+
 int receive_buffer(int client_socket, int buffer_size)
 {
-    if(!is_server_down())
+    int bytes_read;
+
+    char received_buffer[buffer_size];
+
+    printf("[CLIENT] - Receiving [PONG]\n");
+
+    while((bytes_read = recv(client_socket, received_buffer, buffer_size, 0)) > 0)
     {
-        char received_buffer[buffer_size]; // Buffer will be send by server to client
-        int bytes_read = recv(client_socket, received_buffer, sizeof(received_buffer), 0);
 
-        if(bytes_read == SOCKET_ERROR_CODE)
-        {
-            perror("Receive server message error!");
+        received_buffer[bytes_read] = '\0';
 
-        }else
-        {
-            received_buffer[bytes_read] = '\0'; // Buffer string finalized with '\0',
-            
-            float size_in_kb = ((float)buffer_size/(float)KB);
-    
-            if(buffer_size >= KB){
-                printf("[CLIENT] - Receive [PONG] %dKB", (buffer_size/KB));
-            }else{
-                
-                printf("[CLIENT] - Receive [PONG] %fKB", ((float)buffer_size/(float)KB));
-            }
+        printf("VALUE RECEIVED [  %s  ]", received_buffer);
 
-            printf("\n[CLIENT] - Server message received successfully!\n\n");
+        printf("\n[CLIENT] - Server message received successfully!");
 
-        }
-    }else{
-        printf("Server is down!");
-        exit(SYSTEM_EXIT_SUCCESS);
+        return 0;
     }
+   return 1;
 }
 
 void send_buffer(int client_socket, char sended_buffer[], int buffer_size)
@@ -126,8 +116,8 @@ void send_buffer(int client_socket, char sended_buffer[], int buffer_size)
         printf("[CLIENT] - Sending [PING] %fKB\n\n", ((float)buffer_size/(float)KB));
     }
     
-    send(client_socket, sended_buffer, strlen(sended_buffer), 0);
-    receive_buffer(client_socket, buffer_size);
+    send(client_socket, sended_buffer, buffer_size, 0);
+    
 
 }
 
@@ -146,8 +136,10 @@ void socket_listen(int client_socket, char sended_buffer[], int buffer_size)
         exit(SYSTEM_EXIT_FAILED);
     }
 
-    send_buffer(client_socket, sended_buffer, buffer_size);
-   
+    while(TRUE){
+        send_buffer(client_socket, sended_buffer, buffer_size);
+        receive_buffer(client_socket, buffer_size);
+    }
 }
 
 int main(int argc, char** argv)
@@ -156,7 +148,11 @@ int main(int argc, char** argv)
     int buffer_size = (int)atoi(argv[1]);
 
     char sended_buffer[buffer_size];
-    memset(&sended_buffer, '0', buffer_size);
+    
+    for(int i = 0; i < buffer_size; i++)
+    {
+        sended_buffer[i] = '0';
+    }
 
     int client_socket  = init_socket();
     
@@ -175,7 +171,7 @@ int main(int argc, char** argv)
 
     double elapsed_time_ms = (double)(end - start) * 1000.0 / CLOCKS_PER_SEC;
 
-    printf("Time: %.2f ms\n\n", elapsed_time_ms);
+    printf("\nTime: %.2f ms\n\n", elapsed_time_ms);
 
     printf("==================================================================\n");
 
