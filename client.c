@@ -7,16 +7,23 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#define N                  10000
 #define TRUE               1
 #define FALSE              0
 #define HOST_IP            "127.0.0.1"   // IPV4 loopback address
-#define SERVER_PORT        8294         // Server port
+#define SERVER_PORT        8099         // Server port
 #define PORT_USED_CODE     256
 #define SOCKET_ERROR_CODE  -1         // Socket create, Connection server, Receive buffer to server code error
 #define SYSTEM_EXIT_FAILED  1        // Operating System program error response 
 #define SYSTEM_EXIT_SUCCESS 0       // Operating System program success response
 
+
 #define KB 1024
+
+float times[N];
+
+float send_elapsed_time_ms = 0.00;
+float receive_elapsed_time_ms = 0.00;
 
 typedef struct sockaddr_in socket_address;
 
@@ -32,6 +39,8 @@ int init_socket()
         perror("Socket create failed!\n");
         exit(SYSTEM_EXIT_FAILED);
     }
+
+    return client_socket;
 }
 
 socket_address config_server_address()
@@ -44,7 +53,6 @@ socket_address config_server_address()
 
     return server_address;
 }
-
 
 void connect_to_server(int client_socket, socket_address server_address)
 {
@@ -60,65 +68,23 @@ void connect_to_server(int client_socket, socket_address server_address)
         perror("Server connection error\n");
         close(client_socket);
         exit(SYSTEM_EXIT_FAILED);
-    }{
-        printf("Server connection successfully\n\n");
     }
 }
-
-int is_server_down()
-{   
-    char* full_command = (char*)malloc(1000*sizeof(char));
-
-    char* base_command = "lsof -i 4@";
-    char str[5];
-    sprintf(str, "%d", SERVER_PORT);
-
-    strcat(full_command, base_command);
-    strcat(full_command,HOST_IP);
-    strcat(full_command, " -i:");
-    strcat(full_command, str);
-    strcat(full_command, " >/dev/null 2>&1");
-
-    system(full_command) == PORT_USED_CODE ? FALSE : TRUE;
-}
-
 
 int receive_buffer(int client_socket, int buffer_size)
 {
-    int bytes_read;
+    ssize_t bytes_read;
 
-    char received_buffer[buffer_size];
+    int received_buffer[buffer_size];
 
-    printf("[CLIENT] - Receiving [PONG]\n");
+    recv(client_socket, received_buffer, buffer_size, 0);
 
-    while((bytes_read = recv(client_socket, received_buffer, buffer_size, 0)) > 0)
-    {
-
-        received_buffer[bytes_read] = '\0';
-
-        printf("VALUE RECEIVED [  %s  ]", received_buffer);
-
-        printf("\n[CLIENT] - Server message received successfully!");
-
-        return 0;
-    }
-   return 1;
 }
 
-void send_buffer(int client_socket, char sended_buffer[], int buffer_size)
-{
-    
-    float size_in_kb = ((float)buffer_size/(float)KB);
-    
-    if(buffer_size >= KB){
-        printf("[CLIENT] - Sending [PING] %dKB\n\n", (buffer_size/KB));
-    }else{
-        printf("[CLIENT] - Sending [PING] %fKB\n\n", ((float)buffer_size/(float)KB));
-    }
-    
-    send(client_socket, sended_buffer, buffer_size, 0);
-    
 
+void send_buffer(int client_socket, int buffer[], size_t buffer_size)
+{
+    send(client_socket, buffer, buffer_size, 0);
 }
 
 void controlc_handler()
@@ -127,7 +93,7 @@ void controlc_handler()
     exit(SYSTEM_EXIT_SUCCESS);
 }
 
-void socket_listen(int client_socket, char sended_buffer[], int buffer_size)
+void socket_listen(int client_socket, int buffer[], size_t buffer_size)
 {
 
     if(signal(SIGINT, controlc_handler) == SIG_ERR)
@@ -136,45 +102,62 @@ void socket_listen(int client_socket, char sended_buffer[], int buffer_size)
         exit(SYSTEM_EXIT_FAILED);
     }
 
-    while(TRUE){
-        send_buffer(client_socket, sended_buffer, buffer_size);
-        receive_buffer(client_socket, buffer_size);
-    }
+    clock_t start_send_time = clock();
+    send_buffer(client_socket, buffer, buffer_size);
+    clock_t end_send_time = clock();
+
+    clock_t send_difference = (end_send_time - start_send_time);
+    send_elapsed_time_ms = ((float)send_difference / (CLOCKS_PER_SEC/1000));
+
+    clock_t start_receive_time = clock();
+    receive_buffer(client_socket, buffer_size);
+    clock_t end_receive_time = clock();
+
+    clock_t receive_difference = (end_receive_time - start_receive_time);
+    receive_elapsed_time_ms = ((float)receive_difference / (CLOCKS_PER_SEC/1000));
 }
+
+float calculate()
+{
+
+    float average_total = 0.00;
+
+    for(int i = 0; i < N; i++){
+        average_total += times[i];
+    }
+
+    return average_total;
+}
+
 
 int main(int argc, char** argv)
 {
 
-    int buffer_size = (int)atoi(argv[1]);
+    size_t buffer_size = (int)atoi(argv[1]);
 
-    char sended_buffer[buffer_size];
+    int buffer[buffer_size];
     
     for(int i = 0; i < buffer_size; i++)
     {
-        sended_buffer[i] = '0';
+        buffer[i] = (int)(i % 255);
     }
-
+    
     int client_socket  = init_socket();
     
     socket_address server_address;
     server_address = config_server_address();
 
-    printf("\n==================================================================\n");
-    printf("                           PING PONG PROGRAM                       \n");
-    printf("==================================================================\n\n");
-
     connect_to_server(client_socket, server_address);
 
-    clock_t start = clock();
-    socket_listen(client_socket, sended_buffer, buffer_size);
-    clock_t end = clock();
+    for(int i = 0; i < N; i++){
 
-    double elapsed_time_ms = (double)(end - start) * 1000.0 / CLOCKS_PER_SEC;
+        socket_listen(client_socket, buffer, buffer_size);
+        times[i] = send_elapsed_time_ms + receive_elapsed_time_ms;
+    }
 
-    printf("\nTime: %.2f ms\n\n", elapsed_time_ms);
-
-    printf("==================================================================\n");
-
-
+    float average = calculate();
+    
+    printf("%lf\n", (float)(average/(float)N));
+    
     return SYSTEM_EXIT_SUCCESS;
 }

@@ -9,11 +9,12 @@
 #define FALSE              0
 #define TRUE               1
 #define HOST_IP            "127.0.0.1"    // IPV4 loopback address
-#define SERVER_PORT        8294          // Server port
-#define MAX_CONNECTIONS     2          // Num max client connected simultaneously 
+#define SERVER_PORT        8099          // Server port
+#define MAX_CONNECTIONS     10          // Num max client connected simultaneously 
 #define SOCKET_ERROR_CODE  -1         // Socket create, Connection server, Receive buffer to server code error
 #define SYSTEM_EXIT_FAILED  1        // Operating System program error response 
 #define SYSTEM_EXIT_SUCCESS 0       // Operating System program success response
+#define KB                  1024
 
 typedef struct sockaddr_in socket_address;
 
@@ -43,10 +44,10 @@ socket_address config_server_address()
     return server_address;
 }
 
-void bind_server(int server_socket, socket_address server_address, int buffer_size)
+void bind_server(int server_socket, socket_address server_address)
 {
 
-    struct sockaddr *address = (struct sockaddr*)&server_address;
+    struct sockaddr* address = (struct sockaddr*)&server_address;
 
     int server_bind_response = bind(server_socket, address, sizeof(server_address));
 
@@ -70,36 +71,28 @@ int accept_connection(int client_socket, int server_socket, socket_address clien
         exit(SYSTEM_EXIT_FAILED);
  
     }else{
-        printf("[SERVER] - Client connected: %s:%d\n", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port));
         return client_socket;
     }
 
 }
 
-void send_buffer(int client_socket, char buffer[], char buffer_size)
+void send_buffer(int client_socket, int buffer[], int buffer_size)
 {
     
-    printf("\n[SERVER] - Sending [PONG]\n");
     send(client_socket, buffer, buffer_size, 0);
 }
 
 
-int receive_buffer(int client_socket, char buffer[], int buffer_size)
+int receive_buffer(int client_socket, int buffer_size)
 {
-    int bytes_read;
+    ssize_t bytes_read;
 
-    char received_buffer[buffer_size];
-
-    printf("[SERVER] - Receiving [PING]\n");
+    int received_buffer[buffer_size];
 
     while((bytes_read = recv(client_socket, received_buffer, buffer_size, 0)) > 0)
     {
 
         received_buffer[bytes_read] = '\0';
-
-        printf("VALUE RECEIVED [  %s  ]", received_buffer);
-
-        printf("\n[SERVER] - Client message received successfully!");
 
         send_buffer(client_socket, received_buffer, buffer_size);
     }
@@ -112,7 +105,7 @@ void controlc_handler()
 }
 
 
-void server_listen(int client_socket, int server_socket, socket_address client_address, socklen_t client_addr_len, char buffer[], int buffer_size)
+void server_listen(int client_socket, int server_socket, socket_address client_address, socklen_t client_addr_len, int buffer_size)
 {
     
     if (listen(server_socket, MAX_CONNECTIONS) == SOCKET_ERROR_CODE)
@@ -124,30 +117,15 @@ void server_listen(int client_socket, int server_socket, socket_address client_a
 
     printf("[SERVER] - Server TCP listening on port %d...\n", SERVER_PORT);
 
-    //if(signal(SIGINT, controlc_handler) == SIG_ERR)
-    //{
-    //    perror("Signal create error!");
-    //    exit(SYSTEM_EXIT_FAILED);
-    //} 
-
-    char received_buffer[buffer_size];
-    
-
-    while(TRUE)
-    {
-        client_socket = accept_connection(client_socket, server_socket, client_address, client_addr_len);
-        
-        receive_buffer(client_socket, buffer, buffer_size);
-    }
-    
+    client_socket = accept_connection(client_socket, server_socket, client_address, client_addr_len);    
+    receive_buffer(client_socket, buffer_size);
 }
 
 int main(int argc, char** argv)
 {
 
-    int buffer_size = (int)atoi(argv[1]);
-
-    char buffer[buffer_size];
+    size_t buffer_size = 8192;
+    int buffer[buffer_size];
 
     int server_socket, client_socket;
 
@@ -158,7 +136,7 @@ int main(int argc, char** argv)
 
     server_address = config_server_address();
 
-    bind_server(server_socket, server_address, buffer_size);
+    bind_server(server_socket, server_address);
     
-    server_listen(client_socket, server_socket, client_address, client_addr_len, buffer, buffer_size);
+    server_listen(client_socket, server_socket, client_address, client_addr_len, buffer_size);
 }

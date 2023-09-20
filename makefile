@@ -12,7 +12,11 @@ clean:
 run_client:
 	@$(CC) client.c -o client
 	@./client $(buffer_size)
+	@rm server client
 
 run_server:
 	@$(CC) server.c -o server
-	@./server $(buffer_size)
+	@./server $(buffer_size)&
+
+graphic:
+	@python graphic.py
