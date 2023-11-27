@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -18,12 +19,16 @@
 #define TCP_SOCKET_FLAG     1
 #define UDP_SOCKET_FLAG     2
 #define UNIX_SOCKET_FLAG    3
-
+#define SOCK_PATH "pingpong.socket"
 int num_of_read_bytes = 0;
 typedef struct sockaddr_in socket_address;
+typedef struct sockaddr_un socket_address_unix;
 
 socket_address client_address;
 socklen_t client_addr_len;
+
+socket_address      server_address;
+socket_address_unix server_address_unix;
 
 size_t buffer_size;
 int socket_type;
@@ -52,13 +57,22 @@ int create_socket()
 
 socket_address config_server_address()
 {
-    socket_address server_address;
-  
-    server_address.sin_family      = sin_family;
-    server_address.sin_port        = htons(SERVER_PORT);
-    server_address.sin_addr.s_addr = address;
 
-    return server_address;
+    if(socket_type == UNIX_SOCKET_FLAG)
+    {
+        socket_address server_address;
+        server_address.sin_family      = sin_family;
+        server_address.sin_port        = htons(SERVER_PORT);
+        server_address.sin_addr.s_addr = address;
+
+        
+    }else{
+
+        socket_address_unix server_address;
+        server_address.sun_family = AF_UNIX;   
+        strcpy(server_address.sun_path, SOCK_PATH); 
+        unlink(SOCK_PATH);
+    }   
 }
 
 void bind_server(int server_socket, socket_address server_address)
