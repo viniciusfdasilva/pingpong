@@ -25,15 +25,14 @@ float times[N];
 
 int num_of_read_bytes = 0;
 typedef struct sockaddr_in socket_address;
+socket_address server_address;
+
 size_t buffer_size;
 int socket_type;
 
 int domain, type, protocol;
 
 float elapsed_time_ms = 0.00;
-
-ssize_t (*send_generic_fn)(int __fd, const void *__buf, size_t __n, int __flags);
-ssize_t (*recv_generic_fn)(int __fd, void *__buf, size_t __n, int __flags);
 
 int domain, type, protocol, sin_family, address, sock;
 
@@ -88,8 +87,14 @@ void connect_to_server(int client_socket, socket_address server_address)
 int receive_buffer(int client_socket, int buffer_size)
 {
     int received_buffer[buffer_size];
-    recv_generic_fn(client_socket, received_buffer, buffer_size, 0);
     
+    if(socket_type != UDP_SOCKET_FLAG) recv(client_socket, received_buffer, buffer_size, 0);
+    else
+    { 
+        socklen_t* server_addr_size = (socklen_t*)sizeof(server_address);
+        recvfrom(client_socket, received_buffer, buffer_size, 0, (struct sockaddr *)&server_address, server_addr_size);
+    }
+
     for(int i = 0; i < buffer_size; i++)
     {
         printf("%d", received_buffer[i]);
@@ -102,7 +107,12 @@ void send_buffer(int client_socket, int buffer[], size_t buffer_size)
     for(int i = 0; i < num_of_read_bytes; i++)
     {
         printf("ENVIO %d\n", i);
-        send_generic_fn(client_socket, buffer, buffer_size, 0);
+
+        socklen_t server_addr_size = (socklen_t)sizeof(server_address);
+
+        if(socket_type != UDP_SOCKET_FLAG) send(client_socket, buffer, buffer_size, 0);
+        else sendto(client_socket, buffer, buffer_size, 0, (const struct sockaddr *)&server_address, server_addr_size);
+
         receive_buffer(client_socket, buffer_size);
     }
 }
@@ -134,26 +144,27 @@ void attribuite_socket_type(int socket_type)
     switch (socket_type)
     {
         case TCP_SOCKET_FLAG: // TCP SOCKET
+
             sin_family      = AF_INET;
-            send_generic_fn = &send;
-            recv_generic_fn = &recv;
             address         = inet_addr(HOST_IP);
             sock            = SOCK_STREAM;
+
             break;
     
         case UDP_SOCKET_FLAG: // UDP SOCKET
-            send_generic_fn = &sendto;
-            recv_generic_fn = &recvfrom;
+
+            sin_family      = AF_INET;
             address         = INADDR_ANY;
             sock            = SOCK_DGRAM;
+
             break;
     
         case UNIX_SOCKET_FLAG: // UNIXDOMAIN SOCKET
+
             sin_family      = AF_UNIX;
-            send_generic_fn = &send;
-            recv_generic_fn = &recv;
             address         = inet_addr(HOST_IP);
             sock            = SOCK_STREAM;
+
             break;
         
         default:
@@ -191,7 +202,6 @@ int main(int argc, char** argv)
     
     int client_socket  = init_socket();
     
-    socket_address server_address;
     server_address = config_server_address();
 
     connect_to_server(client_socket, server_address);

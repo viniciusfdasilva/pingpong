@@ -11,9 +11,9 @@
 #define HOST_IP            "127.0.0.1"    // IPV4 loopback address
 #define SERVER_PORT        8481          // Server port
 #define MAX_CONNECTIONS     1           // Num max client connected simultaneously 
-#define SOCKET_ERROR_CODE  -1         // Socket create, Connection server, Receive buffer to server code error
-#define SYSTEM_EXIT_FAILED  1        // Operating System program error response 
-#define SYSTEM_EXIT_SUCCESS 0       // Operating System program success response
+#define SOCKET_ERROR_CODE  -1          // Socket create, Connection server, Receive buffer to server code error
+#define SYSTEM_EXIT_FAILED  1         // Operating System program error response 
+#define SYSTEM_EXIT_SUCCESS 0        // Operating System program success response
 #define NUM_OF_ARGUMENTS    3
 #define TCP_SOCKET_FLAG     1
 #define UDP_SOCKET_FLAG     2
@@ -21,18 +21,12 @@
 
 int num_of_read_bytes = 0;
 typedef struct sockaddr_in socket_address;
+
+socket_address client_address;
+socklen_t client_addr_len;
+
 size_t buffer_size;
 int socket_type;
-
-ssize_t (*send_fn);
-ssize_t recv_fn = NULL;
-
-ssize_t (*send_generic_fn);
-ssize_t (*recv_generic_fn);
-
-
-
-//(int __fd, void *__buf, size_t __n, int __flags);
 
 int domain, type, protocol, sin_family, address, sock;
 
@@ -97,19 +91,24 @@ int accept_connection(int client_socket, int server_socket, socket_address clien
 
 void send_buffer(int client_socket, int buffer[], int buffer_size)
 {
-    
-    send_fn(client_socket, buffer, buffer_size, 0);
+    socklen_t client_addr_size = (socklen_t)sizeof(client_address);
+
+    if(socket_type != UDP_SOCKET_FLAG) send(client_socket, buffer, buffer_size, 0);
+    else sendto(client_socket, buffer, buffer_size, 0, (const struct sockaddr *)&client_address, client_addr_size);
 }
 
 int receive_buffer(int client_socket, int buffer_size)
 {
     ssize_t bytes_read;
 
+    socklen_t* client_addr_size = (socklen_t*)sizeof(client_address);
+
     int received_buffer[buffer_size];
     
     for(int i = 0; i < num_of_read_bytes; i++)
     {
-        while((bytes_read = recv_fn(client_socket, received_buffer, buffer_size, 0)) > 0)
+
+        while((bytes_read = socket_type == UDP_SOCKET_FLAG ? recv(client_socket, received_buffer, buffer_size, 0) : recvfrom(client_socket, received_buffer, buffer_size, 0, (struct sockaddr *)&client_address, client_addr_size)) > 0)
         {
             send_buffer(client_socket, received_buffer, buffer_size);
         }
@@ -145,33 +144,22 @@ void attribuite_socket_type(int socket_type)
         case TCP_SOCKET_FLAG: // TCP SOCKET
             sin_family      = AF_INET;
             
-            send_generic_fn = &send;
-            recv_generic_fn = &recv;
             address         = inet_addr(HOST_IP);
             sock            = SOCK_STREAM;
             break;
     
         case UDP_SOCKET_FLAG: // UDP SOCKET
-            ssize_t (*send_generic_fn)(int __fd, const void *__buf, size_t __n, int __flags, __CONST_SOCKADDR_ARG __addr, socklen_t __addr_len);
-            ssize_t (*recv_generic_fn)(int __fd, void *__restrict __buf, size_t __n, int __flags, __SOCKADDR_ARG __addr, socklen_t *__restrict __addr_len);
-            
-            send_generic_fn = &sendto;
-            recv_generic_fn = &recvfrom;
-
-            send_fn         = &send_generic_fn;
-            recv_fn         = &recv_generic_fn;
-
+        
             address         = INADDR_ANY;
             sock            = SOCK_DGRAM;
             break;
     
         case UNIX_SOCKET_FLAG: // UNIXDOMAIN SOCKET
+
             sin_family      = AF_UNIX;
-            send_generic_fn(int __fd, const void *__buf, size_t __n, int __flags);
-            send_generic_fn = &send;
-            recv_generic_fn = &recv;
             address         = inet_addr(HOST_IP);
             sock            = SOCK_STREAM;
+
             break;
         
         default:
@@ -206,8 +194,8 @@ int main(int argc, char** argv)
 
     server_socket = create_socket();
 
-    socket_address server_address, client_address;
-    socklen_t client_addr_len = sizeof(client_address);
+    socket_address server_address;
+    client_addr_len = sizeof(client_address);
 
     server_address = config_server_address();
 
