@@ -19,7 +19,6 @@
 #define TCP_SOCKET_FLAG     1
 #define UDP_SOCKET_FLAG     2
 #define UNIX_SOCKET_FLAG    3
-#define SOCK_PATH "pingpong.socket"
 int num_of_read_bytes = 0;
 typedef struct sockaddr_in socket_address;
 typedef struct sockaddr_un socket_address_unix;
@@ -70,8 +69,8 @@ socket_address config_server_address()
 
         socket_address_unix server_address;
         server_address.sun_family = AF_UNIX;   
-        strcpy(server_address.sun_path, SOCK_PATH); 
-        unlink(SOCK_PATH);
+        strcpy(server_address.sun_path, address); 
+        unlink(address);
     }   
 }
 
@@ -81,6 +80,8 @@ void bind_server(int server_socket, socket_address server_address)
     struct sockaddr* address = (struct sockaddr*)&server_address;
 
     int server_bind_response = bind(server_socket, address, sizeof(server_address));
+
+    if (socket_type == UNIX_SOCKET_FLAG) unlink(address);
 
     if(server_bind_response == SOCKET_ERROR_CODE)
     {
@@ -107,7 +108,7 @@ void send_buffer(int client_socket, int buffer[], int buffer_size)
 {
     socklen_t client_addr_size = (socklen_t)sizeof(client_address);
 
-    if(socket_type != UDP_SOCKET_FLAG) send(client_socket, buffer, buffer_size, 0);
+    if(socket_type == TCP_SOCKET_FLAG) send(client_socket, buffer, buffer_size, 0);
     else sendto(client_socket, buffer, buffer_size, 0, (const struct sockaddr *)&client_address, client_addr_size);
 }
 
@@ -122,7 +123,7 @@ int receive_buffer(int client_socket, int buffer_size)
     for(int i = 0; i < num_of_read_bytes; i++)
     {
 
-        while((bytes_read = socket_type == UDP_SOCKET_FLAG ? recv(client_socket, received_buffer, buffer_size, 0) : recvfrom(client_socket, received_buffer, buffer_size, 0, (struct sockaddr *)&client_address, client_addr_size)) > 0)
+        while((bytes_read = socket_type == UNIX_SOCKET_FLAG ?  recv(client_socket, received_buffer, buffer_size, 0) : recvfrom(client_socket, received_buffer, buffer_size, 0, (struct sockaddr *)&client_address, client_addr_size)) > 0)
         {
             send_buffer(client_socket, received_buffer, buffer_size);
         }
@@ -171,8 +172,8 @@ void attribuite_socket_type(int socket_type)
         case UNIX_SOCKET_FLAG: // UNIXDOMAIN SOCKET
 
             sin_family      = AF_UNIX;
-            address         = inet_addr(HOST_IP);
-            sock            = SOCK_STREAM;
+            address         = "pingpong.socket";
+            sock            = SOCK_DGRAM;
 
             break;
         
