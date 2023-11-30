@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/un.h>
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -32,6 +33,7 @@ typedef union socketaddr_t
 {
     socket_address_ipv4 socket_ipv4;
     socket_address_unix socket_unix;
+
 } socketaddr_t;
 
 
@@ -44,7 +46,8 @@ int domain, type, protocol;
 
 float elapsed_time_ms = 0.00;
 
-int domain, type, protocol, sin_family, address, sock;
+char* address;
+int domain, type, protocol, sin_family, sock;
 
 typedef struct sockaddr_in socket_address;
 
@@ -73,7 +76,7 @@ socketaddr_t config_server_address()
     {
         server_address.socket_ipv4.sin_family      = sin_family;
         server_address.socket_ipv4.sin_port        = htons(SERVER_PORT);
-        server_address.socket_ipv4.sin_addr.s_addr = address;
+        server_address.socket_ipv4.sin_addr.s_addr = inet_addr(address);
 
         
     }else{
@@ -90,8 +93,8 @@ void connect_to_server(int client_socket)
     struct sockaddr* address = socket_type == UNIX_SOCKET_FLAG ? (struct sockaddr*)&server_address.socket_unix : (struct sockaddr*)&server_address.socket_ipv4;
     
     int connection_response = connect(client_socket,
-                                        address, 
-                                        socket_type == UNIX_SOCKET_FLAG ? (struct sockaddr*)&server_address.socket_unix : (struct sockaddr*)&server_address.socket_unix;
+                                        address,
+                                        socket_type == UNIX_SOCKET_FLAG ? (socklen_t)sizeof(server_address.socket_unix) : (socklen_t)sizeof(server_address.socket_ipv4)
                                     );
 
     if(connection_response == SOCKET_ERROR_CODE)
@@ -109,7 +112,7 @@ int receive_buffer(int client_socket, int buffer_size)
     if(socket_type == TCP_SOCKET_FLAG) recv(client_socket, received_buffer, buffer_size, 0);
     else
     { 
-        struct sockaddr* address = socket_type == UNIX_SOCKET_FLAG ? (struct sockaddr*)&server_address.socket_unix : (struct sockaddr*)&server_address.socket_ipv4;
+        struct sockaddr* address    = socket_type == UNIX_SOCKET_FLAG ? (struct sockaddr*)&server_address.socket_unix : (struct sockaddr*)&server_address.socket_ipv4;
         socklen_t* server_addr_size = socket_type == UNIX_SOCKET_FLAG ? (socklen_t*)sizeof(server_address.socket_unix) : (socklen_t*)sizeof(server_address.socket_ipv4);
         recvfrom(client_socket, received_buffer, buffer_size, 0, address, server_addr_size);
     }
@@ -127,10 +130,11 @@ void send_buffer(int client_socket, int buffer[], size_t buffer_size)
     {
         printf("ENVIO %d\n", i);
 
-        socklen_t server_addr_size = (socklen_t)sizeof(server_address);
+        struct sockaddr* address    = socket_type == UNIX_SOCKET_FLAG ? (struct sockaddr*)&server_address.socket_unix : (struct sockaddr*)&server_address.socket_ipv4;
+        socklen_t server_addr_size = socket_type == UNIX_SOCKET_FLAG ? (socklen_t)sizeof(server_address.socket_unix) : (socklen_t)sizeof(server_address.socket_ipv4);
 
         if(socket_type == TCP_SOCKET_FLAG) send(client_socket, buffer, buffer_size, 0);
-        else sendto(client_socket, buffer, buffer_size, 0, (const struct sockaddr *)&server_address, server_addr_size);
+        else sendto(client_socket, buffer, buffer_size, 0, address, server_addr_size);
 
         receive_buffer(client_socket, buffer_size);
     }
@@ -165,7 +169,7 @@ void attribuite_socket_type(int socket_type)
         case TCP_SOCKET_FLAG: // TCP SOCKET
 
             sin_family      = AF_INET;
-            address         = inet_addr(HOST_IP);
+            address         = HOST_IP;
             sock            = SOCK_STREAM;
 
             break;
@@ -173,7 +177,7 @@ void attribuite_socket_type(int socket_type)
         case UDP_SOCKET_FLAG: // UDP SOCKET
 
             sin_family      = AF_INET;
-            address         = INADDR_ANY;
+            address         = HOST_IP;
             sock            = SOCK_DGRAM;
 
             break;
@@ -223,7 +227,7 @@ int main(int argc, char** argv)
     
     server_address = config_server_address();
 
-    connect_to_server(client_socket, server_address);
+    connect_to_server(client_socket);
 
     socket_listen(client_socket, buffer, buffer_size);
 
