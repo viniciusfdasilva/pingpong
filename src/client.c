@@ -59,7 +59,7 @@ void panic(char* message)
 
 int init_socket()
 {   
-    int client_socket = socket(sin_family, sock, IPPROTO_TCP);
+    int client_socket = socket(sin_family, sock, -1);
 
     if(client_socket == SOCKET_ERROR_CODE)
     {
@@ -116,28 +116,18 @@ int receive_buffer(int client_socket, int buffer_size)
         socklen_t* server_addr_size = socket_type == UNIX_SOCKET_FLAG ? (socklen_t*)sizeof(server_address.socket_unix) : (socklen_t*)sizeof(server_address.socket_ipv4);
         recvfrom(client_socket, received_buffer, buffer_size, 0, address, server_addr_size);
     }
-
-    for(int i = 0; i < buffer_size; i++)
-    {
-        printf("%d", received_buffer[i]);
-    }
-    printf("\nRECEBIDO\n");
 }
 
-void send_buffer(int client_socket, int buffer[], size_t buffer_size)
+void send_buffer(int client_socket, int* buffer, size_t buffer_size)
 {
-    for(int i = 0; i < num_of_read_bytes; i++)
-    {
-        printf("ENVIO %d\n", i);
+ 
+    struct sockaddr* address    = socket_type == UNIX_SOCKET_FLAG ? (struct sockaddr*)&server_address.socket_unix : (struct sockaddr*)&server_address.socket_ipv4;
+    socklen_t server_addr_size = socket_type == UNIX_SOCKET_FLAG ? (socklen_t)sizeof(server_address.socket_unix) : (socklen_t)sizeof(server_address.socket_ipv4);
 
-        struct sockaddr* address    = socket_type == UNIX_SOCKET_FLAG ? (struct sockaddr*)&server_address.socket_unix : (struct sockaddr*)&server_address.socket_ipv4;
-        socklen_t server_addr_size = socket_type == UNIX_SOCKET_FLAG ? (socklen_t)sizeof(server_address.socket_unix) : (socklen_t)sizeof(server_address.socket_ipv4);
+    if(socket_type == TCP_SOCKET_FLAG) send(client_socket, buffer, buffer_size, 0);
+    else sendto(client_socket, buffer, buffer_size, 0, address, server_addr_size);
 
-        if(socket_type == TCP_SOCKET_FLAG) send(client_socket, buffer, buffer_size, 0);
-        else sendto(client_socket, buffer, buffer_size, 0, address, server_addr_size);
-
-        receive_buffer(client_socket, buffer_size);
-    }
+    receive_buffer(client_socket, buffer_size);
 }
 
 void controlc_handler()
@@ -146,7 +136,7 @@ void controlc_handler()
     exit(SYSTEM_EXIT_SUCCESS);
 }
 
-void socket_listen(int client_socket, int buffer[], size_t buffer_size)
+void socket_listen(int client_socket, int* buffer, size_t buffer_size)
 {
 
     if(signal(SIGINT, controlc_handler) == SIG_ERR)
@@ -216,8 +206,9 @@ int main(int argc, char** argv)
     get_args(argc, argv);
     attribuite_socket_type(socket_type);
 
-    int buffer[buffer_size];
+    int* buffer = (int*)malloc(buffer_size*sizeof(int));
     
+
     for(int i = 0; i < buffer_size; i++)
     {
         buffer[i] = (int)(i % 255);
@@ -229,9 +220,12 @@ int main(int argc, char** argv)
 
     connect_to_server(client_socket);
 
-    socket_listen(client_socket, buffer, buffer_size);
+    for(int i = 0; i < num_of_read_bytes; i++)
+    {
+        socket_listen(client_socket, buffer, buffer_size);
 
-    printf("%lf\n", (float)(elapsed_time_ms));
-    
+        printf("%lf\n", (float)(elapsed_time_ms));
+    }
+
     return SYSTEM_EXIT_SUCCESS;
 }

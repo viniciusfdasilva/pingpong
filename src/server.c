@@ -53,7 +53,7 @@ int create_socket()
 {
     int server_socket;
 
-    server_socket = socket(sin_family, sock, IPPROTO_TCP);
+    server_socket = socket(sin_family, sock, -1);
 
     if(server_socket == SOCKET_ERROR_CODE)
     {
@@ -112,7 +112,7 @@ int accept_connection(int client_socket, int server_socket)
     }
 }
 
-void send_buffer(int client_socket, int buffer[], int buffer_size)
+void send_buffer(int client_socket, int* buffer, int buffer_size)
 {
     socklen_t client_addr_len = socket_type == UNIX_SOCKET_FLAG ? sizeof(client_address.socket_ipv4) : sizeof(client_address.socket_unix);
     struct sockaddr *address = socket_type  == UNIX_SOCKET_FLAG ? (struct sockaddr*)&client_address.socket_unix : (struct sockaddr*)&client_address.socket_ipv4;
@@ -129,19 +129,14 @@ int receive_buffer(int client_socket, int buffer_size)
     struct sockaddr *address = socket_type  == UNIX_SOCKET_FLAG ? (struct sockaddr*)&client_address.socket_unix : (struct sockaddr*)&client_address.socket_ipv4;
     int received_buffer[buffer_size];
     
-    for(int i = 0; i < num_of_read_bytes; i++)
+    while((bytes_read = socket_type == UNIX_SOCKET_FLAG ?  recv(client_socket, received_buffer, buffer_size, 0) : recvfrom(client_socket, received_buffer, buffer_size, 0, address, client_addr_len)) > 0)
     {
-
-        while((bytes_read = socket_type == UNIX_SOCKET_FLAG ?  recv(client_socket, received_buffer, buffer_size, 0) : recvfrom(client_socket, received_buffer, buffer_size, 0, address, client_addr_len)) > 0)
-        {
-            send_buffer(client_socket, received_buffer, buffer_size);
-        }
+        send_buffer(client_socket, received_buffer, buffer_size);
     }
 }
 
 void controlc_handler()
 {
-    printf("\nProgram finished!\n");
     exit(SYSTEM_EXIT_SUCCESS);
 }
 
@@ -154,8 +149,6 @@ void server_listen(int client_socket, int server_socket, int buffer_size)
         close(server_socket);
         panic("Listening mode error");
     }
-
-    printf("[SERVER] - Server TCP listening on port %d...\n", SERVER_PORT);
     
     client_socket = accept_connection(client_socket, server_socket);    
     receive_buffer(client_socket, buffer_size);
@@ -212,8 +205,8 @@ int main(int argc, char** argv)
     get_args(argc, argv);
     attribuite_socket_type(socket_type);
 
-    int buffer[buffer_size];
-
+    int* buffer = (int*)malloc(buffer_size*sizeof(int));    
+    
     int server_socket, client_socket;
 
     server_socket = create_socket();
@@ -222,7 +215,10 @@ int main(int argc, char** argv)
 
     bind_server(server_socket);
     
-    server_listen(client_socket, server_socket, buffer_size);
+    for(int i = 0; i < num_of_read_bytes; i++)
+    {
+        server_listen(client_socket, server_socket, buffer_size);
+    }
 
     return SYSTEM_EXIT_SUCCESS;
 }
