@@ -3,6 +3,9 @@
 
 *.vscode/settings.json
 .vscode/settings.json
+
+bin
+
 # Object files
 *.o
 *.ko
