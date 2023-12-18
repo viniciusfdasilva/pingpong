@@ -7,14 +7,14 @@
 
 int *create_pipe()
 {
-    int pipe_descriptors[NUM_OF_PIPE_DESCRIPTORS];
+    int *pipe_descriptors = (int*)malloc(NUM_OF_PIPE_DESCRIPTORS*sizeof(int));
 
     if(pipe(pipe_descriptors) == PIPE_ERROR_CODE)
     {
         panic("Pipe creation failed");
     }
 
-    return &pipe_descriptors[0];
+    return pipe_descriptors;
 }
 
 pid_t fork_process()
@@ -29,50 +29,43 @@ pid_t fork_process()
     return child_pid;
 }
 
-void client_write_pipe(int* descriptors, pid_t child, int buffer_size, int *buffer)
+float pingpong_pipe(int* descriptors, pid_t child, int buffer_size, int *buffer)
 {
-    close(descriptors[0]);
-    write(descriptors[1], buffer, sizeof(descriptors));
-    close(descriptors[1]);
-}
 
-void client_read_pipe(int* descriptors, pid_t child, int buffer_size, int *buffer)
-{
-    if (child == CHILD_PROCESS) {
-        close(descriptors[1]);
+    int *pipe_client_to_server = create_pipe();
+    int *pipe_server_to_client = create_pipe();
+
+    if (child == CHILD_PROCESS)
+    {
+        close(pipe_client_to_server[1]);
+        close(pipe_server_to_client[0]);
+
+        ssize_t bytes_read;
+        clock_t start_time = clock();
+        bytes_read = read(pipe_client_to_server[0], buffer, sizeof(buffer));
+       
+        write(pipe_server_to_client[1], buffer, bytes_read);
+        clock_t end_time = clock();
+
+        close(pipe_client_to_server[0]);
+        close(pipe_server_to_client[1]);
+
+        return ((float)(end_time - start_time) / (CLOCKS_PER_SEC/1000));
+    }else
+    {
+        close(pipe_client_to_server[0]);
+        close(pipe_server_to_client[1]);
+
+        clock_t start_time = clock();
+        write(pipe_client_to_server[1], buffer, sizeof(buffer));
         
-        read(descriptors[0], buffer, sizeof(buffer));
-        close(descriptors[0]);
-    }else
-    {
-        server_write_pipe(descriptors, child, buffer_size, buffer);
+        ssize_t bytes_read = read(pipe_server_to_client[0], buffer, sizeof(buffer));
+        clock_t end_time = clock();
+
+
+        close(pipe_client_to_server[1]);
+        close(pipe_server_to_client[0]);
+
+        return ((float)(end_time - start_time) / (CLOCKS_PER_SEC/1000));
     }
-}
-
-
-void server_read_pipe(int* descriptors, pid_t child, int buffer_size, int *buffer)
-{
-
-    int* received_buffer = (int*)malloc(buffer_size*sizeof(int));
-
-    if (child == CHILD_PROCESS) 
-    {
-        close(descriptors[1]);
-
-        read(descriptors[0], received_buffer, sizeof(buffer));
-
-        close(descriptors[0]);
-        exit(EXIT_SUCCESS);
-    }else
-    {
-        client_write_pipe(descriptors, child, buffer_size, buffer);
-    }
-}
-
-
-void server_write_pipe(int* descriptors, pid_t child, int buffer_size, int *buffer)
-{
-    close(descriptors[0]);
-    write(descriptors[1], buffer, sizeof(buffer));
-    close(descriptors[1]);
 }

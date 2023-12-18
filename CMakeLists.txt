@@ -5,5 +5,13 @@ execute_process(
     COMMAND mkdir -p bin
 )
 
-add_executable(./bin/server ./include/socket.h ./include/utils.h ./src/socket.c ./src/utils.c ./src/main_server.c)
-add_executable(./bin/client ./include/socket.h ./include/utils.h ./src/socket.c ./src/utils.c ./src/main_client.c)
+set(SOURCE_FILES
+    src/socket.c
+    src/pipe.c
+    src/utils.c
+)
+
+include_directories(include)
+
+add_executable(./bin/server ${SOURCE_FILES} ./src/main_server.c)
+add_executable(./bin/client ${SOURCE_FILES} ./src/main_client.c)

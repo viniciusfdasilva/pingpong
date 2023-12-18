@@ -12,7 +12,9 @@ pid_t child;
 int server_socket, client_socket;
 
 
-socket_address client_address, server_address;
+socket_address client_address;
+
+void* server_address;
 
 int *buffer;
 size_t buffer_size;
@@ -69,19 +71,22 @@ void attribuite_socket_type(int socket_type)
     {
         case TCP_SOCKET_FLAG: // TCP SOCKET
 
-            server_socket = create_socket(AF_INET, SOCK_STREAM);
-            config_tcp_upd_server_address();
+            server_socket  = create_socket(AF_INET, SOCK_STREAM);
+            socket_address_ipv4 udp_ip_address = config_tcp_upd_server_address();
+            server_address = (void *)&udp_ip_address;
             break;
     
         case UDP_SOCKET_FLAG: // UDP SOCKET
         
-            server_socket = create_socket(AF_INET, SOCK_DGRAM);
-            config_tcp_upd_server_address();
+            server_socket  = create_socket(AF_INET, SOCK_DGRAM);
+            socket_address_ipv4 tcp_ip_address = config_tcp_upd_server_address();
+            server_address = (void *)&tcp_ip_address;
             break;
     
         case UNIX_SOCKET_FLAG: // UNIXDOMAIN SOCKET
-            server_socket = create_socket(AF_UNIX, SOCK_DGRAM);
-            config_unixdomain_server_address();
+            server_socket  = create_socket(AF_UNIX, SOCK_DGRAM);
+            socket_address_unix unix_address = config_unixdomain_server_address();
+            server_address = (void *)&unix_address;
             break;
 
         case PIPE_CONNECTION_FLAG: // PIPE CONNECTION FLAG
@@ -114,17 +119,20 @@ void get_args(int argc, char** argv)
 int main(int argc, char** argv)
 {
 
+    printf("OI0");
     get_args(argc, argv);
+    printf("OI1");
     attribuite_socket_type(socket_type);
 
     buffer = (int*)malloc(buffer_size*sizeof(int));    
-
-    bind_server((void*)&server_address, socket_type, server_socket);
-    
+    printf("OI2");
+    //bind_server(server_address, socket_type, server_socket);
+    printf("OI3");
     for(int i = 0; i < num_of_read_bytes; i++)
     {
         server_listen();
     }
 
+    printf("OI4");
     return SYSTEM_EXIT_SUCCESS;
 }

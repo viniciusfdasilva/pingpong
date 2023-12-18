@@ -5,11 +5,10 @@
     #define NUM_OF_PIPE_DESCRIPTORS   2
     #define CHILD_PROCESS             0
 
+    #include <sys/types.h>
+
     extern int *create_pipe();
     extern pid_t fork_process();
-    
-    extern void server_write_pipe(int* descriptors, pid_t child, int buffer_size, int *buffer);
-    extern void server_read_pipe( int* descriptors, pid_t child, int buffer_size, int *buffer);
-    extern void client_read_pipe( int* descriptors, pid_t child, int buffer_size, int *buffer);
-    extern void client_write_pipe(int* descriptors, pid_t child, int buffer_size, int *buffer);
+
+    extern float pingpong_pipe(int* descriptors, pid_t child, int buffer_size, int *buffer);
 #endif // __PIPE_H__

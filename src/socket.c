@@ -14,7 +14,7 @@ int create_socket(int sin_family, int sock)
 {
     int server_socket;
 
-    server_socket = socket(sin_family, sock, -1);
+    server_socket = socket(sin_family, sock, 0);
 
     if(server_socket == SOCKET_ERROR_CODE)
     {
@@ -45,11 +45,13 @@ socket_address_ipv4 config_tcp_upd_server_address()
 
 void connect_to_server(void *server_address, int client_socket)
 {
-    struct sockaddr* address = (struct sockaddr*)&server_address;
+    socket_address_ipv4 server = config_tcp_upd_server_address();
+
+    struct sockaddr* address = (struct sockaddr*)&server;
 
     int connection_response = connect(client_socket,
                                         address,
-                                        (socklen_t)sizeof(server_address)
+                                        (socklen_t)sizeof(server)
                                     );
 
     if(connection_response == SOCKET_ERROR_CODE)
@@ -64,9 +66,10 @@ void connect_to_server(void *server_address, int client_socket)
 void bind_server(void *server_address, int socket_type, int server_socket)
 {
 
-    struct sockaddr* address = (struct sockaddr*)&server_address;
+    socket_address_ipv4 server = config_tcp_upd_server_address();
+    struct sockaddr* address = (struct sockaddr*)&server;
 
-    int server_bind_response = bind(server_socket, address, sizeof(server_address));
+    int server_bind_response = bind(server_socket, address, sizeof(server));
 
     if (socket_type == UNIX_SOCKET_FLAG) unlink((const char*)address);
 

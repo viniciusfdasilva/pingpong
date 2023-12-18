@@ -42,8 +42,7 @@ void send_buffer(void *server_address)
 
     if(socket_type == TCP_SOCKET_FLAG) send(client_socket, buffer, buffer_size, 0);
     else sendto(client_socket, buffer, buffer_size, 0, address, server_addr_size);
-
-    receive_buffer(socket_type == UNIX_SOCKET_FLAG ? (void*)&unix_server_address : (void*)&ipv4_server_address);
+    receive_buffer(server_address);
 }
 
 void controlc_handler()
@@ -96,8 +95,6 @@ void attribuite_and_init_socket(int socket_type)
             descriptors = create_pipe();
             child       = fork_process();
 
-            server_read_pipe(descriptors, child, buffer_size, buffer);
-
             break;
 
         default:
@@ -128,12 +125,16 @@ int main(int argc, char** argv)
 
     buffer = get_init_buffer(buffer_size);
 
+    float sum_elapsed_time_ms = 0.0;
+
     for(int i = 0; i < num_of_read_bytes; i++)
     {
-        socket_listen();
+        socket_type == PIPE_CONNECTION_FLAG ? elapsed_time_ms = pingpong_pipe(descriptors, child, buffer_size, buffer) : socket_listen();
 
-        printf("%lf\n", (float)(elapsed_time_ms));
+        sum_elapsed_time_ms += elapsed_time_ms;
     }
+
+    printf("%lf\n", (float)((sum_elapsed_time_ms)/(num_of_read_bytes)));
 
     return SYSTEM_EXIT_SUCCESS;
 }
