@@ -16,8 +16,7 @@ int socket_type;
 pid_t child;
 int *descriptors;
 
-socket_address_ipv4 ipv4_server_address;
-socket_address_unix unix_server_address;
+void* server_address;
 
 float elapsed_time_ms = 0.00;
 
@@ -60,7 +59,7 @@ void socket_listen()
     }
 
     clock_t start_time = clock();
-    send_buffer(socket_type == UNIX_SOCKET_FLAG ? (void*)&unix_server_address : (void*)&ipv4_server_address);
+    send_buffer(server_address);
     clock_t end_time = clock();
 
     elapsed_time_ms = ((float)(end_time - start_time) / (CLOCKS_PER_SEC/1000));
@@ -72,21 +71,24 @@ void attribuite_and_init_socket(int socket_type)
     {
         case TCP_SOCKET_FLAG: // TCP SOCKET
             client_socket       = create_socket(AF_INET, SOCK_STREAM);
-            ipv4_server_address = config_tcp_upd_server_address();
-            connect_to_server((void*)&ipv4_server_address,client_socket);
+            socket_address_ipv4 tcp_ip_address = config_tcp_upd_server_address();
+            server_address = (void*)&tcp_ip_address;
+            connect_to_server(server_address,client_socket);
             break;
     
         case UDP_SOCKET_FLAG: // UDP SOCKET
             client_socket       = create_socket(AF_INET, SOCK_STREAM);
-            ipv4_server_address = config_tcp_upd_server_address();
-            connect_to_server((void*)&ipv4_server_address,client_socket);
+            socket_address_ipv4 udp_ip_address = config_tcp_upd_server_address();
+            server_address = (void*)&udp_ip_address;
+            connect_to_server(server_address,client_socket);
 
             break;
     
         case UNIX_SOCKET_FLAG: // UNIXDOMAIN SOCKET
             client_socket       = create_socket(AF_UNIX, SOCK_DGRAM);
-            unix_server_address = config_unixdomain_server_address();
-            connect_to_server((void*)&unix_server_address,client_socket);
+            socket_address_unix unix_ip_address = config_unixdomain_server_address();
+            server_address = (void*)&unix_ip_address;
+            connect_to_server(server_address,client_socket);
             
             break;
 

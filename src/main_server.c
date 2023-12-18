@@ -119,20 +119,16 @@ void get_args(int argc, char** argv)
 int main(int argc, char** argv)
 {
 
-    printf("OI0");
     get_args(argc, argv);
-    printf("OI1");
     attribuite_socket_type(socket_type);
 
     buffer = (int*)malloc(buffer_size*sizeof(int));    
-    printf("OI2");
-    //bind_server(server_address, socket_type, server_socket);
-    printf("OI3");
+    
+    bind_server(server_address, socket_type, server_socket);
+    
     for(int i = 0; i < num_of_read_bytes; i++)
     {
         server_listen();
     }
-
-    printf("OI4");
     return SYSTEM_EXIT_SUCCESS;
 }
