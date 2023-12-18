@@ -2,15 +2,16 @@
 
     #define SOCKET_ERROR_CODE  -1             // Socket create, Connection server, Receive buffer to server code error
     #define SYSTEM_EXIT_FAILED  1            // Operating System program error response 
-    #define HOST_IP            "127.0.0.1"  // IPV4 loopback address
-    #define SERVER_PORT        8481        // Server port
-    #define UNIXDOAMIN_ADDRESS "pingpong.socket"
+    #define HOST_IP             "127.0.0.1"  // IPV4 loopback address
+    #define SERVER_PORT         8481        // Server port
+    #define UNIXDOAMIN_ADDRESS  "pingpong.socket"
     #define MAX_CONNECTIONS     1         // Num max client connected simultaneously 
 
-    #define NUM_OF_ARGUMENTS    3
-    #define TCP_SOCKET_FLAG     1
-    #define UDP_SOCKET_FLAG     2
-    #define UNIX_SOCKET_FLAG    3
+    #define NUM_OF_ARGUMENTS     3
+    #define TCP_SOCKET_FLAG      1
+    #define UDP_SOCKET_FLAG      2
+    #define UNIX_SOCKET_FLAG     3
+    #define PIPE_CONNECTION_FLAG 4
     
     typedef struct sockaddr_in socket_address_ipv4;
     typedef struct sockaddr_un socket_address_unix;

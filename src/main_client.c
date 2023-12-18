@@ -1,4 +1,5 @@
 #include "../include/socket.h"
+#include "../include/pipe.h"
 #include "../include/utils.h"
 
 #define N 10000
@@ -11,6 +12,9 @@ int client_socket;
 int* buffer;
 size_t buffer_size;
 int socket_type;
+
+pid_t child;
+int *descriptors;
 
 socket_address_ipv4 ipv4_server_address;
 socket_address_unix unix_server_address;
@@ -86,12 +90,22 @@ void attribuite_and_init_socket(int socket_type)
             connect_to_server((void*)&unix_server_address,client_socket);
             
             break;
+
+        case PIPE_CONNECTION_FLAG: // PIPE CONNECTION FLAG
         
+            descriptors = create_pipe();
+            child       = fork_process();
+
+            server_read_pipe(descriptors, child, buffer_size, buffer);
+
+            break;
+
         default:
             panic("Value error!");
             break;
     }
 }
+
 
 void get_args(int argc, char** argv)
 {

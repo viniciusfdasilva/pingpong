@@ -1,16 +1,20 @@
 #include "../include/socket.h"
+#include "../include/pipe.h"
 #include "../include/utils.h"
-
 
 int num_of_read_bytes = 0;
 
 socklen_t client_addr_len;
+
+int *descriptors;
+pid_t child;
 
 int server_socket, client_socket;
 
 
 socket_address client_address, server_address;
 
+int *buffer;
 size_t buffer_size;
 int socket_type;
 
@@ -79,7 +83,14 @@ void attribuite_socket_type(int socket_type)
             server_socket = create_socket(AF_UNIX, SOCK_DGRAM);
             config_unixdomain_server_address();
             break;
+
+        case PIPE_CONNECTION_FLAG: // PIPE CONNECTION FLAG
         
+            descriptors = create_pipe();
+            child       = fork_process();
+
+            break;
+
         default:
             panic("Value error!");
             break;
@@ -106,7 +117,7 @@ int main(int argc, char** argv)
     get_args(argc, argv);
     attribuite_socket_type(socket_type);
 
-    int* buffer = (int*)malloc(buffer_size*sizeof(int));    
+    buffer = (int*)malloc(buffer_size*sizeof(int));    
 
     bind_server((void*)&server_address, socket_type, server_socket);
     
