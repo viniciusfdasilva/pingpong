@@ -1,6 +1,6 @@
-#include "../include/socket.h"
-#include "../include/pipe.h"
-#include "../include/utils.h"
+#include <pingpong/socket.h>
+#include <pingpong/pipe.h>
+#include <pingpong/utils.h>
 
 int num_of_read_bytes = 0;
 

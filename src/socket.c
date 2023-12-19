@@ -7,8 +7,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "../include/socket.h"
-#include "../include/utils.h"
+#include <pingpong/socket.h>
+#include <pingpong/utils.h>
 
 int create_socket(int sin_family, int sock)
 {

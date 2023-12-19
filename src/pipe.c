@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "../include/pipe.h"
-#include "../include/utils.h"
+#include <pingpong/pipe.h>
+#include <pingpong/utils.h>
 
 
 int *create_pipe()
