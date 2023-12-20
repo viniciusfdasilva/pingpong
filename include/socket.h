@@ -20,8 +20,9 @@
     extern int create_socket(int sin_family, int sock);
     extern socket_address_unix config_unixdomain_server_address();
     extern socket_address_ipv4 config_tcp_upd_server_address();
-    extern void connect_to_server(void* server_address, int client_socket);
+    extern void connect_to_server(int socket_type, void* server_address, int client_socket);
     extern void bind_server(void* server_address, int socket_type, int server_socket);
-    extern int accept_connection(int client_socket, void* client_address, int server_socket);
+    extern int accept_connection(int socket_type, int client_socket, void* client_address, int server_socket);
+    extern socklen_t attribuite_type_and_getsizeof(int socket_type, struct sockaddr* address, void* socket_address);
 
 #endif // __SOCKET_H__
