@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <pingpong/utils.h>
+#include <utils.h>
 
 void panic(char* message)
 {

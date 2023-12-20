@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 2.8)
 project(pingpong)
 
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
@@ -9,10 +9,12 @@ execute_process(
     COMMAND mkdir -p /usr/include/pingpong/
 )
 
+include_directories(${INCLUDE_DIR})
+
 set(INCLUDE_FILES
-    ${INCLUDE_DIR}/pipe.h
-    ${INCLUDE_DIR}/socket.h
-    ${INCLUDE_DIR}/utils.h
+    ${INCLUDE_DIR}/socket
+    ${INCLUDE_DIR}/pipe
+    ${INCLUDE_DIR}/utils
 )
 
 set(SOURCE_FILES
@@ -20,12 +22,6 @@ set(SOURCE_FILES
     ${SRC_DIR}/pipe.c
     ${SRC_DIR}/utils.c
 )
-
-set(INSTALL_DIR /usr/include/pingpong/)
-
-install(FILES ${INCLUDE_FILES} DESTINATION ${INSTALL_DIR})
-
-include_directories(${CMAKE_SOURCE_DIR}/include)
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -35,3 +31,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
 
 add_executable(./bin/server ${SOURCE_FILES} ./src/main_server.c)
 add_executable(./bin/client ${SOURCE_FILES} ./src/main_client.c)
+
+target_include_directories(./bin/server PUBLIC ${INCLUDE_DIR})
+target_include_directories(./bin/client PUBLIC ${INCLUDE_DIR})

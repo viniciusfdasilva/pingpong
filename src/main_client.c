@@ -1,6 +1,6 @@
-#include <pingpong/socket.h>
-#include <pingpong/pipe.h>
-#include <pingpong/utils.h>
+#include <socket.h>
+#include <pipe.h>
+#include <utils.h>
 
 #define N 10000
 
