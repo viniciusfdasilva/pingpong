@@ -1,6 +1,6 @@
-#include "../include/socket.h"
-#include "../include/pipe.h"
-#include "../include/utils.h"
+#include <socket.h>
+#include <pipe.h>
+#include <utils.h>
 
 int num_of_read_bytes = 0;
 

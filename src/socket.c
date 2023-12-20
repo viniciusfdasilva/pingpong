@@ -7,8 +7,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "../include/socket.h"
-#include "../include/utils.h"
+#include <socket.h>
+#include <utils.h>
 
 int create_socket(int sin_family, int sock)
 {
@@ -43,13 +43,14 @@ socket_address_ipv4 config_tcp_upd_server_address()
     return server_address;
 }
 
-void connect_to_server(void *server_address, int client_socket)
+void connect_to_server(int socket_type, void *server_address, int client_socket)
 {
-    struct sockaddr* address = (struct sockaddr*)&server_address;
+    struct sockaddr address;
+    socklen_t address_sizeof = attribuite_type_and_getsizeof(socket_type, &address, server_address);
 
     int connection_response = connect(client_socket,
-                                        address,
-                                        (socklen_t)sizeof(server_address)
+                                        &address,
+                                        address_sizeof
                                     );
 
     if(connection_response == SOCKET_ERROR_CODE)
@@ -61,14 +62,29 @@ void connect_to_server(void *server_address, int client_socket)
 
 }
 
+socklen_t attribuite_type_and_getsizeof(int socket_type, struct sockaddr* address, void* socket_address)
+{
+    if(socket_type == UNIX_SOCKET_FLAG)
+    {
+        address = (struct sockaddr*)&*((socket_address_unix*)socket_address);
+        return (socklen_t)sizeof(*(socket_address_unix*)socket_address);
+    }else
+    {
+        address = (struct sockaddr*)&*((socket_address_ipv4*)socket_address);
+        return (socklen_t)sizeof(*(socket_address_ipv4*)socket_address);
+    }
+}
+
 void bind_server(void *server_address, int socket_type, int server_socket)
 {
 
-    struct sockaddr* address = (struct sockaddr*)&server_address;
+    
+    struct sockaddr address;
+    socklen_t address_sizeof = attribuite_type_and_getsizeof(socket_type, &address, server_address);
 
-    int server_bind_response = bind(server_socket, address, sizeof(server_address));
+    int server_bind_response = bind(server_socket, &address, address_sizeof);
 
-    if (socket_type == UNIX_SOCKET_FLAG) unlink((const char*)address);
+    if (socket_type == UNIX_SOCKET_FLAG) unlink((const char*)&address);
 
     if(server_bind_response == SOCKET_ERROR_CODE)
     {
@@ -77,12 +93,14 @@ void bind_server(void *server_address, int socket_type, int server_socket)
     }
 }
 
-int accept_connection(int client_socket, void *client_address, int server_socket)
+int accept_connection(int socket_type, int client_socket, void *client_address, int server_socket)
 {
     socklen_t client_addr_len = sizeof(client_address);
-    struct sockaddr *address = (struct sockaddr*)&client_address;
+    
+    struct sockaddr address;
+    attribuite_type_and_getsizeof(socket_type, &address, client_address);
 
-    client_socket = accept(server_socket, address, &client_addr_len);
+    client_socket = accept(server_socket, &address, &client_addr_len);
 
     if(client_socket == SYSTEM_EXIT_FAILED)
     {

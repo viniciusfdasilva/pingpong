@@ -1,6 +1,6 @@
-#include "../include/socket.h"
-#include "../include/pipe.h"
-#include "../include/utils.h"
+#include <socket.h>
+#include <pipe.h>
+#include <utils.h>
 
 #define N 10000
 
@@ -73,14 +73,14 @@ void attribuite_and_init_socket(int socket_type)
             client_socket       = create_socket(AF_INET, SOCK_STREAM);
             socket_address_ipv4 tcp_ip_address = config_tcp_upd_server_address();
             server_address = (void*)&tcp_ip_address;
-            connect_to_server(server_address,client_socket);
+            connect_to_server(socket_type, server_address,client_socket);
             break;
     
         case UDP_SOCKET_FLAG: // UDP SOCKET
             client_socket       = create_socket(AF_INET, SOCK_STREAM);
             socket_address_ipv4 udp_ip_address = config_tcp_upd_server_address();
             server_address = (void*)&udp_ip_address;
-            connect_to_server(server_address,client_socket);
+            connect_to_server(socket_type, server_address,client_socket);
 
             break;
     
@@ -88,7 +88,7 @@ void attribuite_and_init_socket(int socket_type)
             client_socket       = create_socket(AF_UNIX, SOCK_DGRAM);
             socket_address_unix unix_ip_address = config_unixdomain_server_address();
             server_address = (void*)&unix_ip_address;
-            connect_to_server(server_address,client_socket);
+            connect_to_server(socket_type, server_address,client_socket);
             
             break;
 
