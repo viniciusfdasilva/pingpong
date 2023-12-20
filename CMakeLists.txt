@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.12)
 project(pingpong)
 
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
@@ -14,6 +14,7 @@ set(INCLUDE_FILES
     ${INCLUDE_DIR}/socket.h
     ${INCLUDE_DIR}/utils.h
 )
+
 
 set(SOURCE_FILES
     ${SRC_DIR}/socket.c
