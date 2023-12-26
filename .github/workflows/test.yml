@@ -1,0 +1,27 @@
+name: Pingpong
+
+on: 
+  push: 
+    branches: [dev]
+  
+  pull_request: 
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up CMake
+      uses: actions/setup-cmake@v2
+      with:
+        cmake-version: 3.21
+
+    - name: Configure and build
+      run: |
+        cmake .
+        make
+
