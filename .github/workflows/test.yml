@@ -16,7 +16,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up CMake
-      uses: crazy-max/setup-cmake@v1
+      uses: threeal/cmake-action@v1.3.0
       with:
         cmake-version: 3.21
 
